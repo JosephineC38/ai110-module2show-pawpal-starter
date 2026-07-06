@@ -1,15 +1,54 @@
 classDiagram
-    %% Replace the placeholders below with your actual classes, attributes, methods, and relationships.
-    %% Keep this file updated so it matches your final implementation.
-
-    class ClassName {
-        +type attribute
-        +method() returnType
+    class Owner {
+        +String name
+        +String preferences
+        +String availableTime
+        +addPet(pet)
+        +removePet(pet)
+        +updatePreferences(newPreferences)
+        +updateName(newName)
     }
 
-    class AnotherClass {
-        +type attribute
-        +method() returnType
+    class Pet {
+        +String name
+        +String animalType
+        +String health
+        +String age
+        +String breed
+        +String specialNeeds
+        +updateHealth(newHealth)
+        +updateProfile(newDetails)
+        +getCareNeeds()
     }
 
-    ClassName --> AnotherClass : relationship
+    class Task {
+        +String type
+        +String time
+        +String importance
+        +String occurrence
+        +String description
+        +Int durationMinutes
+        +Boolean completed
+        +Boolean recurring
+        +updateTask(newDetails)
+        +markCompleted()
+        +isDueToday()
+    }
+
+    class Scheduler {
+        +String time
+        +String importance
+        +List~String~ blockers
+        +Int dailyTimeLimit
+        +List~String~ availableSlots
+        +buildPlan(pet, tasks)
+        +prioritizeTasks(tasks)
+        +resolveBlockers(blockers)
+        +generateSchedule(tasks)
+        +explainPlan(plan)
+    }
+
+    Owner "1" --> "1..*" Pet : owns
+    Pet "1" --> "0..*" Task : has
+    Scheduler --> Pet : plans for
+    Scheduler --> Task : organizes

@@ -2,10 +2,18 @@
 
 ## 1. System Design
 
+Three Core Actions
+- Add/Remove Pets along with their basic information 
+- Schedule a walk based on time schedules and when the pet feels happy  
+- See today's tasks for the pet and what needs to be done 
+
 **a. Initial design**
 
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
+
+My initial UML design contains the classes: Owner, Pet, Task, and Scheduler. The Owner is for the pet owner and it owns the Pet and has the attributes of name, preferences, available_time, and pets. It is meant to see as an overview for the user and for them to add their availabilty. The Owner class can add/remove pets, and change its other attributes through methods. The Pet class is for each pet that the owner has and it can have many objects from the Task class. It's mean to see what each pet needs at any time and to build a profile of them. It has the attributes name, animal_type, health, age, breed, special_needs, and tasks. It can use different methods to update these attributes. The Task class are for the pets and can be organized through the Scheduler class. It is meant to easily see what needs to be done for the Pets. It has the attributes of type, time, importance, occurance,  description, duration_minutes, completed, and recurring with methods to update each one. The final class is the Scheduler class, which neatly organizes tasks for the user to view. It has the attributes of time, importance, blockers, daily_time_limit, and available_slots. Based on these attributes, the class can generate plans, prioritize tasks, resolve blockers, and explain why the plan was created. 
+
 
 **b. Design changes**
 
