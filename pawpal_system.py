@@ -29,6 +29,13 @@ class Owner:
         """Update the owner's name."""
         self.name = new_name
 
+    def get_all_tasks(self) -> List["Task"]:
+        """Return all tasks from every pet owned by this owner."""
+        tasks: List[Task] = []
+        for pet in self.pets:
+            tasks.extend(pet.tasks)
+        return tasks
+
 
 @dataclass
 class Pet:
@@ -65,6 +72,10 @@ class Pet:
         """Return a list of care needs for the pet."""
         care_needs = [self.health, self.special_needs]
         return [need for need in care_needs if need]
+
+    def get_tasks(self) -> List["Task"]:
+        """Return the tasks attached to this pet."""
+        return self.tasks
 
 
 @dataclass
@@ -105,6 +116,7 @@ class Scheduler:
         available_slots: Optional[List[str]] = None,
         owner: Optional[Owner] = None,
     ) -> None:
+        """Initialize the scheduler with basic planning settings."""
         self.time = time
         self.importance = importance
         self.blockers = blockers or []
@@ -113,9 +125,30 @@ class Scheduler:
         self.owner = owner
         self.current_plan: List[Task] = []
 
-    def build_plan(self, pet: Pet, tasks: List[Task]) -> List[Task]:
-        """Create a plan for a pet based on the available tasks."""
-        self.current_plan = self.generate_schedule(tasks)
+    def build_plan(self, owner: Optional[Owner] = None, pet: Optional[Pet] = None) -> List[Task]:
+        """Create a plan for a pet based on the owner's available tasks."""
+        source_owner = owner or self.owner
+        if source_owner is None:
+            return []
+
+        if pet is not None:
+            tasks = pet.get_tasks()
+        else:
+            tasks = source_owner.get_all_tasks()
+
+        if not tasks:
+            return []
+
+        prioritized = self.prioritize_tasks(tasks)
+        filtered = self.apply_preferences(source_owner, prioritized)
+        plan: List[Task] = []
+        for index, task in enumerate(filtered):
+            if index < len(self.available_slots):
+                task.scheduled_time = self.available_slots[index]
+            if not self.check_conflicts(task, plan):
+                plan.append(task)
+
+        self.current_plan = plan
         return self.current_plan
 
     def prioritize_tasks(self, tasks: List[Task]) -> List[Task]:
@@ -153,11 +186,14 @@ class Scheduler:
     def generate_schedule(self, tasks: List[Task]) -> List[Task]:
         """Generate a scheduled list of tasks."""
         prioritized = self.prioritize_tasks(tasks)
+        filtered = self.apply_preferences(self.owner, prioritized)
         resolved_blockers = self.resolve_blockers(self.blockers)
         plan: List[Task] = []
-        for task in prioritized:
+        for index, task in enumerate(filtered):
             if resolved_blockers and task.importance.lower() == "low":
                 continue
+            if index < len(self.available_slots):
+                task.scheduled_time = self.available_slots[index]
             if not self.check_conflicts(task, plan):
                 plan.append(task)
         return plan

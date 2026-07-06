@@ -54,6 +54,12 @@ Paste a sample of your app's CLI or Streamlit output here so a reader can see wh
 #   ...
 ```
 
+Today's Schedule
+=========================
+1. 08:00 - Feeding (Mochi) | Priority: high | Duration: 10 min
+2. 09:00 - Morning Walk (Mochi) | Priority: high | Duration: 30 min
+3. 19:00 - Medication (Luna) | Priority: medium | Duration: 5 min
+
 ## 🧪 Testing PawPal+
 
 ```bash
