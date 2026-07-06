@@ -21,6 +21,8 @@ My initial UML design contains the classes: Owner, Pet, Task, and Scheduler. The
 - If yes, describe at least one change and why you made it.
 
 ---
+Yes, one change I made was adding the Owner attribute to the Scheduler class as I forgot
+the possibility that a pet can have more than one owner and that the owners could do the tasks at different days. 
 
 ## 2. Scheduling Logic and Tradeoffs
 
