@@ -5,17 +5,6 @@ st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
 st.title("🐾 PawPal+")
 
-st.markdown(
-    """
-Welcome to the PawPal+ starter app.
-
-This file is intentionally thin. It gives you a working Streamlit app so you can start quickly,
-but **it does not implement the project logic**. Your job is to design the system and build it.
-
-Use this app as your interactive demo once your backend classes/functions exist.
-"""
-)
-
 with st.expander("Scenario", expanded=True):
     st.markdown(
         """
@@ -74,6 +63,9 @@ with col2:
     duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
 with col3:
     priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
+# Recurrence options
+occurrence = st.selectbox("Occurrence", ["once", "daily", "weekly"], index=0)
+recurring = st.checkbox("Recurring", value=False)
 
 if st.button("Add task"):
     if current_pet is None:
@@ -86,6 +78,8 @@ if st.button("Add task"):
         importance=priority,
         description=task_title,
         duration_minutes=int(duration),
+        occurrence=occurrence,
+        recurring=recurring,
     )
     current_pet.add_task(task)
     st.success(f"Added task for {current_pet.name}.")
@@ -95,10 +89,33 @@ if owner.pets:
     for pet in owner.pets:
         st.write(f"- {pet.name} ({pet.animal_type})")
         if pet.tasks:
-            for task in pet.tasks:
-                st.write(
-                    f"  • {task.type} — {task.importance} ({task.duration_minutes} min)"
-                )
+            for t_index, task in enumerate(pet.tasks):
+                cols = st.columns([6, 1])
+                with cols[0]:
+                    st.write(
+                        f"• {task.type} — {task.importance} ({task.duration_minutes} min)"
+                    )
+                # Button to mark task completed. Use unique key per task.
+                btn_key = f"complete-{pet.name}-{t_index}-{task.type}"
+                with cols[1]:
+                    if st.button("Complete", key=btn_key):
+                            # mark complete and optionally create next occurrence
+                            new_task = task.mark_completed()
+                            # remove the completed task from the pet
+                            pet.remove_task(task)
+                            st.success(f"Marked '{task.type}' complete for {pet.name} and removed it.")
+                            if new_task is not None:
+                                st.info(f"Created next occurrence: {new_task.time}")
+
+                            # if pet has no remaining tasks, remove the pet from owner
+                            if not pet.tasks:
+                                owner.remove_pet(pet)
+                                st.info(f"Removed pet {pet.name} (no remaining tasks).")
+
+                            # regenerate plan if present
+                            if "plan" in st.session_state:
+                                scheduler = Scheduler(owner=owner, available_slots=["08:00", "09:00", "19:00"])
+                                st.session_state.plan = scheduler.generate_schedule(owner.get_all_tasks())
         else:
             st.write("  • No tasks yet")
 else:
@@ -111,17 +128,79 @@ st.caption("Generate a daily plan from the tasks attached to your pets.")
 
 if st.button("Generate schedule"):
     scheduler = Scheduler(owner=owner, available_slots=["08:00", "09:00", "19:00"])
-    plan = scheduler.build_plan(owner=owner)
-    st.session_state.plan = plan
-    st.write(scheduler.explain_plan(plan))
 
-    if plan:
-        st.write("### Planned Tasks")
-        for index, task in enumerate(plan, start=1):
-            pet_name_for_task = task.pet.name if task.pet else "Unknown"
-            st.write(
-                f"{index}. {task.scheduled_time} - {task.type} ({pet_name_for_task}) | "
-                f"Priority: {task.importance} | Duration: {task.duration_minutes} min"
-            )
-    else:
+    # Gather tasks and show a sorted preview
+    tasks = owner.get_all_tasks()
+    if not tasks:
         st.info("No tasks available to schedule yet.")
+    else:
+        # Detect pre-schedule conflicts based on task.time
+        pre_conflict = scheduler.detect_conflicts(tasks)
+        if pre_conflict:
+            # Build a helpful table of conflicting entries
+            dup_times = {}
+            for t in tasks:
+                dup_times.setdefault(t.time, []).append(t)
+            conflict_rows = []
+            for tm, items in dup_times.items():
+                if len(items) > 1:
+                    for it in items:
+                        conflict_rows.append({
+                            "time": tm,
+                            "pet": it.pet.name if it.pet else "Unknown",
+                            "task": it.type,
+                            "priority": it.importance,
+                        })
+            st.warning(pre_conflict)
+            if conflict_rows:
+                st.table(conflict_rows)
+
+        st.markdown("**All tasks (sorted by clock time)**")
+        sorted_tasks = scheduler.sort_by_time(tasks)
+        preview_rows = [
+            {
+                "time": t.time,
+                "pet": t.pet.name if t.pet else "Unknown",
+                "task": t.type,
+                "priority": t.importance,
+                "duration_min": t.duration_minutes,
+            }
+            for t in sorted_tasks
+        ]
+        st.table(preview_rows)
+
+        # Generate the final plan and show results
+        plan = scheduler.generate_schedule(tasks)
+        st.session_state.plan = plan
+
+        # Check for scheduled-time conflicts (after assignment)
+        scheduled_map = {}
+        schedule_conflicts = []
+        for t in plan:
+            key = t.scheduled_time or "UNSCHEDULED"
+            scheduled_map.setdefault(key, []).append(t)
+        for key, items in scheduled_map.items():
+            if key != "UNSCHEDULED" and len(items) > 1:
+                schedule_conflicts.append({"scheduled_time": key, "count": len(items)})
+
+        if schedule_conflicts:
+            st.warning("Scheduling conflicts detected for these times:")
+            st.table(schedule_conflicts)
+
+        if plan:
+            st.success("Schedule generated")
+            plan_rows = []
+            for index, task in enumerate(plan, start=1):
+                plan_rows.append(
+                    {
+                        "#": index,
+                        "scheduled_time": task.scheduled_time or "(unscheduled)",
+                        "task": task.type,
+                        "pet": task.pet.name if task.pet else "Unknown",
+                        "priority": task.importance,
+                        "duration_min": task.duration_minutes,
+                    }
+                )
+            st.table(plan_rows)
+        else:
+            st.info("No tasks were scheduled after applying preferences and blockers.")

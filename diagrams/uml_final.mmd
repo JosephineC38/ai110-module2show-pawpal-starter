@@ -1,0 +1,73 @@
+classDiagram
+    class Owner {
+        +String name
+        +String preferences
+        +String availableTime
+        +List~Pet~ pets
+        +addPet(pet)
+        +removePet(pet)
+        +updatePreferences(newPreferences)
+        +updateName(newName)
+        +getAllTasks() : List~Task~
+    }
+
+    class Pet {
+        +String name
+        +String animalType
+        +String health
+        +String age
+        +String breed
+        +String specialNeeds
+        +List~Task~ tasks
+        +addTask(task)
+        +removeTask(task)
+        +updateHealth(newHealth)
+        +updateProfile(newDetails)
+        +getCareNeeds()
+        +getTasks() : List~Task~
+    }
+
+    class Task {
+        +String type
+        +String time            // HH:MM, "today", or YYYY-MM-DD
+        +String scheduled_time  // Optional assigned slot
+        +String importance
+        +String occurrence      // once|daily|weekly
+        +String description
+        +Int duration_minutes
+        +Int priority_score
+        +Boolean completed
+        +Boolean recurring
+        +Pet? pet
+        +updateTask(newDetails)
+        +markCompleted() : Task?   // creates next occurrence when recurring
+        +isDueToday() : Boolean
+    }
+
+    class Scheduler {
+        +String time
+        +String importance
+        +List~String~ blockers
+        +Int dailyTimeLimit
+        +List~String~ availableSlots
+        +Owner? owner
+        +List~Task~ current_plan
+        +buildPlan(owner? , pet? ) : List~Task~
+        +generateSchedule(tasks : List~Task~) : List~Task~
+        +prioritizeTasks(tasks : List~Task~) : List~Task~
+        +sortByTime(tasks : List~Task~) : List~Task~
+        +filterTasks(tasks, completed?, pet_name?) : List~Task~
+        +detectConflicts(tasks : List~Task~) : String?
+        +checkConflicts(task, plan : List~Task~) : Boolean
+        +applyPreferences(owner? , tasks : List~Task~) : List~Task~
+        +resolveBlockers(blockers : List~String~) : List~String~
+        +explainPlan(plan : List~Task~) : String
+    }
+
+    Owner "1" --> "0..*" Pet : owns
+    Pet "1" --> "0..*" Task : has
+    Scheduler ..> Owner : (optional) uses
+    Scheduler ..> Pet : plans for / reads tasks
+    Scheduler ..> Task : organizes / assigns scheduled_time
+    Task "0..1" --> Pet : pet
+    Task o-- Task : <<creates>> next occurrence (markCompleted)

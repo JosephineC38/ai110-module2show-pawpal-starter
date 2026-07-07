@@ -91,19 +91,50 @@ Confidence Level: 4 Stars
 
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | Scheduler.sort_by_time() | Sort by duration in ascending order. |
-| Filtering |Scheduler.filter_tasks() | Filter based on completion status and pet name filters. |
-| Conflict handling | Scheduler.detect_conflicts() | Detect when two tasks share a time slot. |
-| Recurring tasks | Task.mark_completed() | Mark the task as completed and create the next occurrence if recurring. Checks if task was daily or weekly. |
+| Task sorting | `Scheduler.sort_by_time()` | Sort tasks by clock time (HH:MM). Malformed times are placed last. |
+| Prioritization | `Scheduler.prioritize_tasks()` | Sort by `importance` (high→low), then `priority_score`, then `duration_minutes`. |
+| Filtering | `Scheduler.filter_tasks()` | Filter by `completed` status and `pet_name`. |
+| Conflict detection | `Scheduler.detect_conflicts()`, `Scheduler.check_conflicts()` | `detect_conflicts()` finds duplicate `time` values pre-scheduling; `check_conflicts()` checks `scheduled_time` collisions post-scheduling. |
+| Schedule generation | `Scheduler.generate_schedule()` | Assigns tasks to `available_slots`, respects blockers and preferences, and avoids conflicts when possible. |
+| Recurrence | `Task.mark_completed()` | Marks completed and creates the next occurrence for `recurring` tasks (`daily`/`weekly`), attaching it to the same `Pet`.
+| Preferences & blockers | `Scheduler.apply_preferences()`, `Scheduler.resolve_blockers()` | `apply_preferences()` optionally filters/reorders tasks based on `Owner.preferences`; `resolve_blockers()` cleans or removes blockers. |
+| API behavior | `Scheduler.build_plan(owner=None, pet=None)` | Accepts either an `Owner` or a `Pet`; uses `pet.tasks` if `pet` is provided. |
+| Explanation | `Scheduler.explain_plan()` | Returns a human-readable summary of the generated plan. |
 
 ## 📸 Demo Walkthrough
 
 Describe your app in numbered steps so a reader can follow along without watching a video:
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+1. Add the owner's name 
+2. Add the pet's name and type (dog, cat, or other)
+3. Create a task for the pet by giving it a title, duration in minutes, and a priortiy (low, medium, and high). You can create as many tasks as needed for your pet. 
+4. If you have more than one pet, add their name and type. Additonally, add the needed tasks for them. To switch between pets to add tasks, simply type their name and type again. 
+5. After all tasks are added, click "Generate schedule" to create a schedule. It shows schedules sorted by time and filtered for currently pending pet tasks. It also warns the user
+if there's a timing conflict and when. 
+
+Sample CLI Output from running main.py
+Today's Schedule
+=========================
+1. 08:00 - Feeding (Mochi) | Priority: high | Duration: 10 min
+2. 09:00 - Overlapping Care (Luna) | Priority: high | Duration: 15 min
+3. 19:00 - Morning Walk (Mochi) | Priority: high | Duration: 30 min
+4. None - Medication (Luna) | Priority: medium | Duration: 5 min
+
+Sorted by Time
+--------------------
+08:00 - Feeding (Mochi)
+08:15 - Medication (Luna)
+08:15 - Overlapping Care (Luna)
+09:30 - Morning Walk (Mochi)
+10:00 - Grooming (Luna)
+
+Filtered for pending Mochi tasks
+------------------------------
+09:30 - Morning Walk
+08:00 - Feeding
+
+Conflict Warning
+--------------------
+Warning: overlapping tasks detected at 08:15.
 
 **Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
