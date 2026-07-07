@@ -36,6 +36,10 @@ the possibility that a pet can have more than one owner and that the owners coul
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
 
+Because of the built-in methods for resolving blockers, detecting conflicts, and checking when two tasks share the same slot, the tradeoff here is you can't overlap tasks. However, 
+it's reasonable because the tasks are unlikely to be doable at the same time. For example,
+you can't feed and walk your pet at once. Futhermore, it's only a scheduler for pets, not for other tasks, so nothing needs to overlap and is useful if someone else needs to take care of your pet. 
+
 ---
 
 ## 3. AI Collaboration

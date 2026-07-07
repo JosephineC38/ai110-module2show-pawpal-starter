@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date, timedelta
 from dataclasses import dataclass, field
 from typing import List, Optional
 
@@ -97,9 +98,33 @@ class Task:
         for key, value in new_details.items():
             setattr(self, key, value)
 
-    def mark_completed(self) -> None:
-        """Mark the task as completed."""
+    def mark_completed(self) -> Optional["Task"]:
+        """Mark the task as completed and create the next occurrence if recurring."""
         self.completed = True
+
+        if not self.recurring:
+            return None
+
+        if self.occurrence.lower() == "daily":
+            next_due = date.today() + timedelta(days=1)
+        elif self.occurrence.lower() == "weekly":
+            next_due = date.today() + timedelta(weeks=1)
+        else:
+            return None
+
+        next_task = Task(
+            type=self.type,
+            time=next_due.strftime("%Y-%m-%d"),
+            importance=self.importance,
+            occurrence=self.occurrence,
+            description=self.description,
+            duration_minutes=self.duration_minutes,
+            recurring=self.recurring,
+            priority_score=self.priority_score,
+        )
+        if self.pet is not None:
+            self.pet.add_task(next_task)
+        return next_task
 
     def is_due_today(self) -> bool:
         """Return whether the task is due today."""
@@ -162,6 +187,39 @@ class Scheduler:
                 task.duration_minutes,
             ),
         )
+
+    def sort_by_time(self, tasks: List[Task]) -> List[Task]:
+        """Return tasks sorted by their time value in ascending HH:MM order."""
+        return sorted(
+            tasks,
+            key=lambda task: tuple(int(part) for part in task.time.split(":")) if ":" in task.time else (24, 60),
+        )
+
+    def filter_tasks(
+        self,
+        tasks: List[Task],
+        completed: Optional[bool] = None,
+        pet_name: Optional[str] = None,
+    ) -> List[Task]:
+        """Return tasks matching the requested completion status and pet name filters."""
+        pet_name_lower = pet_name.lower() if pet_name is not None else None
+
+        return [
+            task
+            for task in tasks
+            if (completed is None or task.completed is completed)
+            and (pet_name_lower is None or (task.pet is not None and task.pet.name.lower() == pet_name_lower))
+        ]
+
+    def detect_conflicts(self, tasks: List[Task]) -> Optional[str]:
+        """Return a lightweight warning message when two tasks share the same time slot."""
+        seen_times = {}
+        for task in tasks:
+            task_time = task.time
+            if task_time in seen_times:
+                return f"Warning: overlapping tasks detected at {task_time}."
+            seen_times[task_time] = task
+        return None
 
     def resolve_blockers(self, blockers: List[str]) -> List[str]:
         """Handle or remove blockers from the schedule."""
