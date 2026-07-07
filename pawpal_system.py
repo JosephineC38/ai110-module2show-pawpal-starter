@@ -151,11 +151,17 @@ class Scheduler:
         self.current_plan: List[Task] = []
 
     def build_plan(self, owner: Optional[Owner] = None, pet: Optional[Pet] = None) -> List[Task]:
-        """Create a plan for a pet based on the owner's available tasks."""
+        """Create a plan for a pet based on the owner's available tasks.
+
+        Accept either an `owner` or a `pet`. If a `pet` is provided, use its
+        tasks directly; only require an owner when `pet` is not provided.
+        """
         source_owner = owner or self.owner
-        if source_owner is None:
+        # If neither owner nor pet provided, nothing to plan
+        if pet is None and source_owner is None:
             return []
 
+        # Use pet tasks when a pet is explicitly provided
         if pet is not None:
             tasks = pet.get_tasks()
         else:
@@ -235,9 +241,12 @@ class Scheduler:
             if existing.scheduled_time
         )
 
-    def apply_preferences(self, owner: Owner, tasks: List[Task]) -> List[Task]:
-        """Filter or reorder tasks using owner preferences."""
-        if not owner.preferences:
+    def apply_preferences(self, owner: Optional[Owner], tasks: List[Task]) -> List[Task]:
+        """Filter or reorder tasks using owner preferences.
+
+        If `owner` is None, return tasks unchanged.
+        """
+        if owner is None or not owner.preferences:
             return tasks
         return [task for task in tasks if task.importance.lower() != "low"]
 

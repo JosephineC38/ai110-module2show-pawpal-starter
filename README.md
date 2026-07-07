@@ -64,7 +64,7 @@ Today's Schedule
 
 ```bash
 # Run the full test suite:
-pytest
+python -m pytest
 
 # Run with coverage:
 pytest --cov
@@ -75,7 +75,16 @@ Sample test output:
 ```
 # Paste your pytest output here
 ```
+========================================== test session starts ==========================================
+platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0
+rootdir: *your root dir*
+plugins: anyio-4.14.1
+collected 14 items     
 
+tests\test_pawpal.py ..............
+========================================== 14 passed in 0.16s ==========================================
+
+Confidence Level: 4 Stars
 ## 📐 Smarter Scheduling
 
 > Fill in once you've implemented scheduling logic.
